@@ -1,0 +1,26 @@
+{
+  "name": "airdrop",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "keygen": "ts-node ./keygen.ts",
+    "ledger": "ts-node ./ledger.ts",
+    "airdrop": "ts-node ./airdrop.ts",
+    "transfer": "ts-node ./transfer.ts",
+    "enroll": "ts-node ./enroll.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.0",
+    "@ledgerhq/hw-app-solana": "^7.1.6",
+    "@ledgerhq/hw-transport-node-hid": "^6.28.6",
+    "@solana/web3.js": "^1.75.0",
+    "@types/node": "^18.15.11",
+    "bs58": "^5.0.0",
+    "prompt-sync": "^4.2.0",
+    "typescript": "^5.0.4"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1"
+  }
+}
