@@ -15,14 +15,20 @@ umi.use(signerIdentity(signer));
 
 (async () => {
     try {
+        const filename = "./cluster1/nft_image.png";
         //1. Load image
+        const image = await readFile(filename);
+
         //2. Convert image to generic file.
+        const genericFile = await createGenericFile(image,filename);
+        
         //3. Upload image
+        const uri = await umi.uploader.upload([genericFile]);
 
-        // const image = ???
+        console.log("Your image URI: ", uri);
 
-        // const [myUri] = ??? 
-        // console.log("Your image URI: ", myUri);
+        // Result:
+        // Your image URI:  [ 'https://arweave.net/DlBQeYnzUA6K5mAzfNS-KzEhju4T1F-ebpLoo-Qao0g' ]
     }
     catch(error) {
         console.log("Oops.. Something went wrong", error);
