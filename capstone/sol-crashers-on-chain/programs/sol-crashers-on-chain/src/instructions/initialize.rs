@@ -33,21 +33,18 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    /// CHECK: 'signer' key.
-    #[account(seeds = [b"auth"], bump)]
-    pub authority: UncheckedAccount<'info>,
-
     #[account(
         init,
-        signer,
+        seeds = [b"gold"],
+        bump,
         payer = payer,
         mint::token_program = token_program,
         mint::decimals = 0,
-        mint::authority = authority,
-        mint::freeze_authority = authority,
-        extensions::metadata_pointer::authority = authority,
+        mint::authority = mint,
+        mint::freeze_authority = mint,
+        extensions::metadata_pointer::authority = mint,
         extensions::metadata_pointer::metadata_address = mint,
-        extensions::close_authority::authority = authority,
+        extensions::close_authority::authority = mint,
     )]
     pub mint: InterfaceAccount<'info, Mint>,
 
@@ -78,12 +75,12 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         token_program_id: ctx.accounts.token_program.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
         metadata: ctx.accounts.mint.to_account_info(), // metadata account is the mint, since data is stored in mint
-        mint_authority: ctx.accounts.authority.to_account_info(),
-        update_authority: ctx.accounts.authority.to_account_info(),
+        mint_authority: ctx.accounts.mint.to_account_info(),
+        update_authority: ctx.accounts.mint.to_account_info(),
     };
 
-    let seeds = b"auth";
-    let bump = ctx.bumps.authority;
+    let seeds = b"gold";
+    let bump = ctx.bumps.mint;
     let signer: &[&[&[u8]]] = &[&[seeds, &[bump]]];
 
     let cpi_ctx = CpiContext::new_with_signer(
