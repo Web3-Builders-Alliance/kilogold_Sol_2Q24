@@ -35,7 +35,10 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        seeds = [b"gold"],
+        seeds = [
+            b"mint", 
+            b"gold"
+        ],
         bump,
         payer = payer,
         mint::token_program = token_program,
@@ -61,15 +64,16 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     // 2. reload the mint account (data length has changed), 
     // 3. update the mint account's lamports to the minimum balance using the helper function
 
-    // Need some SOL to pay for the CPI
+    // HACK: Need some SOL to pay for the CPI
     // TODO: Calcualte how much for CPI.
     // Optimization: Have the payer account to pay for the CPI without changing authority.
     transfer_lamports(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.mint.to_account_info(),
-        Rent::get()?.minimum_balance(0),
+        Rent::get()?.minimum_balance(10000000),
         ctx.accounts.system_program.to_account_info(),
     )?;
+    msg!("Transferred lamports to mint account for CPI");
 
     let cpi_accounts = TokenMetadataInitialize {
         token_program_id: ctx.accounts.token_program.to_account_info(),
@@ -79,21 +83,27 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         update_authority: ctx.accounts.mint.to_account_info(),
     };
 
-    let seeds = b"gold";
-    let bump = ctx.bumps.mint;
-    let signer: &[&[&[u8]]] = &[&[seeds, &[bump]]];
+    let seeds = &[
+        b"mint".as_ref(),
+        b"gold".as_ref(),
+        &[ctx.bumps.mint]
+    ];
+    let seeds = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(), 
         cpi_accounts,
-        signer
+        seeds
     );
         
     // Step 1
     token_metadata_initialize(cpi_ctx, "Gold".into(), "GLD".into(), "https://crashers/gld".into())?;
+    msg!("Initialized token metadata for mint account");
+
 
     // Step 2
     ctx.accounts.mint.reload()?;
+    msg!("Reloaded mint account after metadata initialization");
 
     // Step 3
     update_account_lamports_to_minimum_balance(
@@ -101,6 +111,8 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
     )?;
+    msg!("Updated mint account lamports to minimum balance after metadata initialization");
+
 
     Ok(())
 }
