@@ -14,14 +14,15 @@ describe("sol-crashers-on-chain", () => {
   const program = anchor.workspace.SolCrashersOnChain as Program<SolCrashersOnChain>;
 
   const payer = Keypair.generate(); console.log("payer:", payer.publicKey.toBase58());
-  const mint = Keypair.generate(); console.log("mint:", mint.publicKey.toBase58());
 
   const [pda_authority] = PublicKey.findProgramAddressSync(
     [
-      anchor.utils.bytes.utf8.encode("auth"),
+      anchor.utils.bytes.utf8.encode("gold"),
     ],
     program.programId
   );
+  console.log("mint:", pda_authority.toBase58());
+
 
   it("airdrop payer", async () => {
     await anchor.getProvider().connection.confirmTransaction(
@@ -36,13 +37,12 @@ describe("sol-crashers-on-chain", () => {
       .initialize()
       .accountsStrict({
           payer: payer.publicKey,
-          mint: mint.publicKey,
+          mint: pda_authority,
           systemProgram: anchor.web3.SystemProgram.programId,
           associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
           tokenProgram: TOKEN_2022_PROGRAM_ID,
-          authority: pda_authority,
         })
-      .signers([payer, mint])
+      .signers([payer])
       .rpc();
 
     console.log("Your transaction signature", tx);
