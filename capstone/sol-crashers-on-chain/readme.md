@@ -17,20 +17,21 @@ flowchart TD
             
             goldMint["Gold Mint Acct
                 Seed: 'gold'
-                Mint Auth: Gold Mint"
+                Mint Auth: Gold Mint
                 Metadata: Gold Mint
-                Close Auth: SolCrash
-
+                Close Auth: Gold Mint"
             ]
             
             goldATA_Bob["Bob Gold ATA
                 Seeds: Bob, 'gold'
-                Auth: SolCrash"
+                Auth: Gold Mint"
             ]
             
             gemMint["Gem Mint Acct
                 Seed: 'mint'
-                Mint Auth: Gem Mint"
+                Mint Auth: Gem Mint
+                Metadata: Gem Mint
+                Close Auth: Gem Mint"
             ]
             
             gemATA_Bob["Bob Gem ATA
@@ -47,3 +48,29 @@ flowchart TD
             accountB["Bob Acct"]
             accountB -.->|mint_gold#40;amount#41;| program  
 ```
+
+# Instructions
+## Initialize
+```mermaid
+sequenceDiagram
+    participant Dev as Dev Account
+    participant SolCrash as SolCrash Program
+    participant ATAProg as ATA Program
+    participant Token22Prog as Token22 Program
+    participant SysProg as System Program
+    participant GoldMint as Gold Mint Account
+    participant GemMint as Gem Mint Account
+    
+    Dev->>SolCrash: initialize
+    SolCrash->>SysProg: init PDA 'GoldMint'
+    SysProg->>SysProg: transfer_lamports(payer, GoldMint) rent-exemption.
+    SolCrash->>Token22Prog: init_token_mint(GoldMint)
+    SysProg->>SysProg: [HACK]transfer_lamports(payer, GoldMint) cover init_token_metadata cost.
+    SolCrash->>Token22Prog: init_token_metadata(GoldMint)
+    SolCrash->>GoldMint: reload(), account size changed.
+    SolCrash->>GoldMint: transfer_lamports(payer, GoldMint) rent top-up.
+
+```
+
+# TODO
+* New player registration flow.
