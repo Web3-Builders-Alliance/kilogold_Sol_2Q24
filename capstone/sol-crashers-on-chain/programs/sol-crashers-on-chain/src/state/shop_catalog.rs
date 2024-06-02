@@ -11,6 +11,7 @@ pub enum Consumable {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
+#[allow(non_camel_case_types)]
 pub enum CatalogItem {
     gold,
     gems,
