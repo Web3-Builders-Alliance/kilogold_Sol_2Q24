@@ -39,6 +39,14 @@ describe("sol-crashers-on-chain", () => {
     program.programId
   );
 
+  const [pda_mint_gems] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("mint"),
+      Buffer.from("gems"),
+    ],
+    program.programId
+  );
+
   const bob_account = Keypair.generate();
   let bob_ata_gold: Account;
 
@@ -62,7 +70,7 @@ describe("sol-crashers-on-chain", () => {
         payer: payerPK,
       })
       .rpc({
-        skipPreflight: true,
+        //skipPreflight: true,
       });
 
     console.log("Transaction signature: %s", tx);
@@ -70,6 +78,7 @@ describe("sol-crashers-on-chain", () => {
     console.log("Program ID:\t%s", program.programId.toBase58());
     console.log("Config PK:\t%s", pda_config.toBase58());
     console.log("Gold Mint PK:\t%s", pda_mint_gold.toBase58());
+    console.log("Gems Mint PK:\t%s", pda_mint_gold.toBase58());
     console.log("Shop Catalog PK:\t%s", pda_shop.toBase58());
   });
 
