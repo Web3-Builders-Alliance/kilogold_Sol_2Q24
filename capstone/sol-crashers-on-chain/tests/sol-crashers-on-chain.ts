@@ -91,9 +91,9 @@ describe("sol-crashers-on-chain", () => {
     console.log("Gold Mint ATA Bob PK:\t%s", bob_ata_gold.address.toBase58());
   });
   
-  it("Trade[0] assets", async () => {
+  it("Shop trade [0]", async () => {
     await program.methods
-    .trade(0)
+    .shopTrade(0)
     .accounts({
       tokenAccountGold: bob_ata_gold.address,
     })
