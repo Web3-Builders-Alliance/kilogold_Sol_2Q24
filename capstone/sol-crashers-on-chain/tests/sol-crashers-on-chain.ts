@@ -19,11 +19,11 @@ describe("sol-crashers-on-chain", () => {
 
   const [pda_config] = PublicKey.findProgramAddressSync(
     [
-      Buffer.from("co"),
+      Buffer.from("config"),
     ],
     program.programId
   );
-  console.log("Config PK:\t%s", pda_config.toBase58());
+
   const [pda_mint_gold] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("mint"),
@@ -48,15 +48,14 @@ describe("sol-crashers-on-chain", () => {
   });
 
   it("Is initialized!", async () => {
-    // Add your test here.
+
     const tx = await program.methods
       .initialize()
       .accountsStrict({
         payer: payerPK,
+        config: pda_config,
         mint: pda_mint_gold,
-        //config: pda_config,
         systemProgram: anchor.web3.SystemProgram.programId,
-        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
         tokenProgram: TOKEN_2022_PROGRAM_ID,
       })
       .rpc({
@@ -84,8 +83,6 @@ describe("sol-crashers-on-chain", () => {
     );
     console.log("Gold Mint ATA Bob PK:\t%s", bob_ata_gold.address.toBase58());
   });
-
-  it("Mint assets", async () => {
-
-  });
+  // it("Mint assets", async () => {
+  // });
 });
