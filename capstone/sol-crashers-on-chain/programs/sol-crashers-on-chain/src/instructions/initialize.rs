@@ -11,19 +11,10 @@ use anchor_lang::{
     Lamports,
 };
 
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_2022::spl_token_2022::extension::{
-        group_member_pointer::GroupMemberPointer, metadata_pointer::MetadataPointer,
-        mint_close_authority::MintCloseAuthority, permanent_delegate::PermanentDelegate,
-        transfer_hook::TransferHook,
-    },
-    token_interface::{
-        spl_token_metadata_interface::state::TokenMetadata, token_metadata_initialize, Mint,
-        Token2022, TokenAccount, TokenMetadataInitialize,
-    },
+use anchor_spl::token_interface::{
+    token_metadata_initialize, Mint,
+    Token2022, TokenMetadataInitialize,
 };
-use spl_pod::optional_keys::OptionalNonZeroPubkey;
 use crate::state;
 
 #[derive(Accounts)]
@@ -60,34 +51,46 @@ pub struct Initialize<'info> {
     )]
     pub mint: InterfaceAccount<'info, Mint>,
 
+    #[account(
+        init,
+        seeds = [
+            b"shop"
+        ],
+        bump,
+        payer = payer,
+        space = state::ShopCatalog::LENGTH,
+    )]
+    pub shop_catalog: Account<'info, state::ShopCatalog>,
+
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token2022>,
 }
 
-pub fn handler(ctx: Context<Initialize>) -> Result<()> {  
-
+pub fn config(ctx: &mut Context<Initialize>) -> Result<()> {
     let config = &mut ctx.accounts.config;
     config.dev_key = Some(*ctx.accounts.payer.key);
     config.bump_self = ctx.bumps.config;
     config.bump_mint_gold = ctx.bumps.mint;
-
-    // Steps:
-    // All you need to do here is:
-    // 1. execute the initialize_token_metadata function we defined earlier
-    // 2. reload the mint account (data length has changed), 
-    // 3. update the mint account's lamports to the minimum balance using the helper function
-
-    // HACK: Need some SOL to pay for the CPI
+    config.bump_shop_catalog = ctx.bumps.shop_catalog;
+    Ok(())
+}
+pub fn accounts(ctx: &mut Context<Initialize>) -> Result<()> {  
+    // HACK: Mint needs some SOL to pay for the CPI, because Mint is its own authority.
     // TODO: Calcualte how much for CPI.
-    // Optimization: Have the payer account to pay for the metadata CPI without changing mint authority.
+    // Optimization: Have the payer account to pay for the metadata CPI without changing Mint authority.
     transfer_lamports(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.mint.to_account_info(),
         Rent::get()?.minimum_balance(10000000),
         ctx.accounts.system_program.to_account_info(),
     )?;
-    msg!("Transferred lamports to mint account for CPI");
+    msg!("HACK: Transferred lamports to mint account for CPI");
 
+    // Steps:
+    // All you need to do here is:
+    // 1. execute the initialize_token_metadata function we defined earlier
+    // 2. reload the mint account (data length has changed), 
+    // 3. update the mint account's lamports to the minimum balance using the helper function
     let cpi_accounts = TokenMetadataInitialize {
         token_program_id: ctx.accounts.token_program.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
@@ -126,6 +129,17 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     )?;
     msg!("Updated mint account lamports to minimum balance after metadata initialization");
 
+    Ok(())
+}
+
+pub fn shop(ctx: &mut Context<Initialize>) -> Result<()> {
+    let shop_catalog = &mut ctx.accounts.shop_catalog;
+    shop_catalog.trading_pairs[0].from_item = state::CatalogItem::Gold;
+    shop_catalog.trading_pairs[0].amount_from_item = 0;
+    shop_catalog.trading_pairs[0].to_item = state::CatalogItem::Gold;
+    shop_catalog.trading_pairs[0].amount_to_item = 233;
+
+    //TODO: Add remaining trading pairs
 
     Ok(())
 }

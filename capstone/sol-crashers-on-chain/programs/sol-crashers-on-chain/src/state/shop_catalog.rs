@@ -14,6 +14,10 @@ pub enum CatalogItem {
     Gems,
     Item(Consumable),
 }
+impl CatalogItem {
+    pub const LGST_VARIANT_LENGTH: usize = U8_L;
+    pub const LENGTH: usize = U8_L + Self::LGST_VARIANT_LENGTH;
+}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct ShopTrade {
@@ -23,8 +27,18 @@ pub struct ShopTrade {
     pub to_item: CatalogItem,
     pub amount_to_item: u64,
 }
+impl ShopTrade {
+    pub const LENGTH: usize = ANCHOR_DISCRIMINATOR_L
+    + 2 * U64_L 
+    + 2 * CatalogItem::LENGTH;
+}
 
 #[account]
 pub struct ShopCatalog {
     pub trading_pairs: [ShopTrade;3],
+}
+
+impl ShopCatalog {
+    pub const LENGTH: usize = ANCHOR_DISCRIMINATOR_L 
+    + 3 * ShopTrade::LENGTH;
 }
