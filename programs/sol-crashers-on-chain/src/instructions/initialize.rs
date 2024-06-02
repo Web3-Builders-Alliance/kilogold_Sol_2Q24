@@ -134,9 +134,9 @@ pub fn accounts(ctx: &mut Context<Initialize>) -> Result<()> {
 
 pub fn shop(ctx: &mut Context<Initialize>) -> Result<()> {
     let shop_catalog = &mut ctx.accounts.shop_catalog;
-    shop_catalog.trading_pairs[0].from_item = state::CatalogItem::Gold;
+    shop_catalog.trading_pairs[0].from_item = state::CatalogItem::gold;
     shop_catalog.trading_pairs[0].amount_from_item = 0;
-    shop_catalog.trading_pairs[0].to_item = state::CatalogItem::Gold;
+    shop_catalog.trading_pairs[0].to_item = state::CatalogItem::gold;
     shop_catalog.trading_pairs[0].amount_to_item = 233;
 
     //TODO: Add remaining trading pairs

@@ -1,25 +1,46 @@
+use std::result::Result;
+
 use anchor_lang::prelude::*;
 use crate::constants::*;
 
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub enum Consumable {
     LevelPotion,
     HealthPotion,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub enum CatalogItem {
-    Gold,
-    Gems,
-    Item(Consumable),
+    gold,
+    gems,
+    item(Consumable),
 }
 impl CatalogItem {
     pub const LGST_VARIANT_LENGTH: usize = U8_L;
     pub const LENGTH: usize = U8_L + Self::LGST_VARIANT_LENGTH;
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            CatalogItem::gold => "gold",
+            CatalogItem::gems => "gems",
+            CatalogItem::item(_) => "item",
+        }
+    }
+}
+impl std::str::FromStr for CatalogItem {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "gold" => Ok(CatalogItem::gold),
+            "gems" => Ok(CatalogItem::gems),
+            "item" => Ok(CatalogItem::item(Consumable::LevelPotion)),
+            _ => Err(()),
+        }
+    }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct ShopTrade {
     pub from_item: CatalogItem,
     pub amount_from_item: u64,
