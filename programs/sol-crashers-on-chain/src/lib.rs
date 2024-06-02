@@ -15,15 +15,14 @@ declare_id!("ADQ3REAiRVbCjnTbNTyNe72Cabpr3Zy1ftDXKF7CxXLt");
 pub mod sol_crashers_on_chain {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize(mut ctx: Context<Initialize>) -> Result<()> {
+        initialize::config(&mut ctx)?;
+        initialize::accounts(&mut ctx)?;
+        initialize::shop(&mut ctx)?;
+        Ok(())
     }
 
-    pub fn mint(ctx: Context<ManageAsset>, amount: u32) -> Result<()> {
-        manage_asset::mint(ctx, amount)
-    }
-
-    pub fn burn(ctx: Context<ManageAsset>, amount: u32) -> Result<()> {
-        manage_asset::burn(ctx, amount)
+    pub fn trade(ctx: Context<ManageAsset>, trade_index: u8) -> Result<()> {
+        manage_asset::trade(ctx, trade_index)
     }
 }

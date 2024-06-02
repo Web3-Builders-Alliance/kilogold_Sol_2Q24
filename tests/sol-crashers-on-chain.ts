@@ -24,6 +24,13 @@ describe("sol-crashers-on-chain", () => {
     program.programId
   );
 
+  const [pda_shop] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("shop"),
+    ],
+    program.programId
+  );
+
   const [pda_mint_gold] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("mint"),
@@ -51,25 +58,25 @@ describe("sol-crashers-on-chain", () => {
 
     const tx = await program.methods
       .initialize()
-      .accountsStrict({
+      .accounts({
         payer: payerPK,
-        config: pda_config,
-        mint: pda_mint_gold,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: TOKEN_2022_PROGRAM_ID,
       })
       .rpc({
         skipPreflight: true,
       });
 
     console.log("Transaction signature: %s", tx);
+    console.log("Payer:\t\t%s", payerPK.toBase58());
     console.log("Program ID:\t%s", program.programId.toBase58());
     console.log("Config PK:\t%s", pda_config.toBase58());
-    console.log("Payer:\t\t%s", payerPK.toBase58());
     console.log("Gold Mint PK:\t%s", pda_mint_gold.toBase58());
+    console.log("Shop Catalog PK:\t%s", pda_shop.toBase58());
   });
 
   it("Create token accounts", async () => {
+    //BUG: This isn't actually associating the token account with Bob. The seeds are wrong.
+    //     We need to manually seed the token account to make this work.
+    //     Current seeds are [mint, mint], instead of [mint, bob].
     bob_ata_gold = await getOrCreateAssociatedTokenAccount(
       anchor.getProvider().connection,
       bob_account,
@@ -83,6 +90,19 @@ describe("sol-crashers-on-chain", () => {
     );
     console.log("Gold Mint ATA Bob PK:\t%s", bob_ata_gold.address.toBase58());
   });
-  // it("Mint assets", async () => {
-  // });
+  
+  it("Trade[0] assets", async () => {
+    await program.methods
+    .trade(0)
+    .accounts({
+      tokenAccountGold: bob_ata_gold.address,
+    })
+    .rpc({
+      skipPreflight: true,
+    });
+
+    // Check bob_ata_gold token balance
+    const balance = await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gold.address);
+    console.log("Bob's Gold balance: %s", balance.value.amount);
+  });
 });
