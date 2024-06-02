@@ -35,6 +35,15 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
+        space = state::Config::LENGTH,
+        seeds = [b"config"],
+        bump,
+        payer = payer,
+    )]
+    pub config: Account<'info, state::Config>,
+
+    #[account(
+        init,
         seeds = [
             b"mint", 
             b"gold"
@@ -47,29 +56,20 @@ pub struct Initialize<'info> {
         mint::freeze_authority = mint,
         extensions::metadata_pointer::authority = mint,
         extensions::metadata_pointer::metadata_address = mint,
-        extensions::close_authority::authority = mint,
+        //extensions::close_authority::authority = payer, <- This breaks tests in weird ways.
     )]
     pub mint: InterfaceAccount<'info, Mint>,
 
-    // #[account(
-    //     init,
-    //     space = state::Config::LENGTH,
-    //     seeds = [b"co"],
-    //     bump,
-    //     payer = payer,
-    // )]
-    // pub config: Account<'info, state::Config>,
-
     pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token2022>,
 }
 
 pub fn handler(ctx: Context<Initialize>) -> Result<()> {  
 
-    // ctx.accounts.config.dev_key = *ctx.accounts.payer.key;
-    // ctx.accounts.config.bump_self = ctx.bumps.config;
-    // ctx.accounts.config.bump_mint_gold = ctx.bumps.mint;
+    let config = &mut ctx.accounts.config;
+    config.dev_key = Some(*ctx.accounts.payer.key);
+    config.bump_self = ctx.bumps.config;
+    config.bump_mint_gold = ctx.bumps.mint;
 
     // Steps:
     // All you need to do here is:
@@ -79,7 +79,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
 
     // HACK: Need some SOL to pay for the CPI
     // TODO: Calcualte how much for CPI.
-    // Optimization: Have the payer account to pay for the CPI without changing authority.
+    // Optimization: Have the payer account to pay for the metadata CPI without changing mint authority.
     transfer_lamports(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.mint.to_account_info(),
@@ -96,12 +96,12 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         update_authority: ctx.accounts.mint.to_account_info(),
     };
 
-    let seeds: &[&[u8]] = &[
+    let seeds  = &[
         b"mint".as_ref(),
         b"gold".as_ref(),
         &[ctx.bumps.mint]
     ];
-    let seeds: &[&[&[u8]]] = &[&seeds[..]];
+    let seeds = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(), 
