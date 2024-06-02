@@ -174,7 +174,13 @@ pub fn shop(ctx: &mut Context<Initialize>) -> Result<()> {
     shop_catalog.trading_pairs[0].to_item = state::CatalogItem::gold;
     shop_catalog.trading_pairs[0].amount_to_item = 233;
 
+    shop_catalog.trading_pairs[1].from_item = state::CatalogItem::gold;
+    shop_catalog.trading_pairs[1].amount_from_item = 100;
+    shop_catalog.trading_pairs[1].to_item = state::CatalogItem::gems;
+    shop_catalog.trading_pairs[1].amount_to_item = 20;
+
     //TODO: Add remaining trading pairs
+    //TODO: Parameterize the trading pairs via instruction args.
 
     Ok(())
 }
