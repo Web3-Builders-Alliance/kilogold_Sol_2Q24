@@ -18,4 +18,12 @@ pub mod sol_crashers_on_chain {
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         initialize::handler(ctx)
     }
+
+    pub fn mint(ctx: Context<ManageAsset>, amount: u32) -> Result<()> {
+        manage_asset::mint(ctx, amount)
+    }
+
+    pub fn burn(ctx: Context<ManageAsset>, amount: u32) -> Result<()> {
+        manage_asset::burn(ctx, amount)
+    }
 }

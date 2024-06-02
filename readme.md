@@ -23,7 +23,6 @@ flowchart TD
             ]
             
             goldATA_Bob["Bob Gold ATA
-                Seeds: Bob, 'gold'
                 Auth: Gold Mint"
             ]
             
@@ -35,7 +34,6 @@ flowchart TD
             ]
             
             gemATA_Bob["Bob Gem ATA
-                Seeds: Bob, 'gem'
                 Auth: Gem Mint"
             ]
 
