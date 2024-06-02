@@ -17,6 +17,13 @@ describe("sol-crashers-on-chain", () => {
 
   const payerPK = anchor.getProvider().publicKey;
 
+  const [pda_config] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("co"),
+    ],
+    program.programId
+  );
+  console.log("Config PK:\t%s", pda_config.toBase58());
   const [pda_mint_gold] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("mint"),
@@ -47,6 +54,7 @@ describe("sol-crashers-on-chain", () => {
       .accountsStrict({
         payer: payerPK,
         mint: pda_mint_gold,
+        //config: pda_config,
         systemProgram: anchor.web3.SystemProgram.programId,
         associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
         tokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -57,6 +65,7 @@ describe("sol-crashers-on-chain", () => {
 
     console.log("Transaction signature: %s", tx);
     console.log("Program ID:\t%s", program.programId.toBase58());
+    console.log("Config PK:\t%s", pda_config.toBase58());
     console.log("Payer:\t\t%s", payerPK.toBase58());
     console.log("Gold Mint PK:\t%s", pda_mint_gold.toBase58());
   });

@@ -51,12 +51,25 @@ pub struct Initialize<'info> {
     )]
     pub mint: InterfaceAccount<'info, Mint>,
 
+    // #[account(
+    //     init,
+    //     space = state::Config::LENGTH,
+    //     seeds = [b"co"],
+    //     bump,
+    //     payer = payer,
+    // )]
+    // pub config: Account<'info, state::Config>,
+
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token2022>,
 }
 
 pub fn handler(ctx: Context<Initialize>) -> Result<()> {  
+
+    // ctx.accounts.config.dev_key = *ctx.accounts.payer.key;
+    // ctx.accounts.config.bump_self = ctx.bumps.config;
+    // ctx.accounts.config.bump_mint_gold = ctx.bumps.mint;
 
     // Steps:
     // All you need to do here is:
@@ -83,12 +96,12 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         update_authority: ctx.accounts.mint.to_account_info(),
     };
 
-    let seeds = &[
+    let seeds: &[&[u8]] = &[
         b"mint".as_ref(),
         b"gold".as_ref(),
         &[ctx.bumps.mint]
     ];
-    let seeds = &[&seeds[..]];
+    let seeds: &[&[&[u8]]] = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(), 
@@ -117,7 +130,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     Ok(())
 }
 
-pub fn update_account_lamports_to_minimum_balance<'info>(
+fn update_account_lamports_to_minimum_balance<'info>(
     account: AccountInfo<'info>,
     payer: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
