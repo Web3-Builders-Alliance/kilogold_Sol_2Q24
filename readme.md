@@ -13,39 +13,53 @@ We are modeling a closed-loop economy. We can revisit later as an open-loop econ
 flowchart TD
 
             direction LR
-            program("SolCrash Program")
+            program("SolCrash Program
+                Signer Seed: 'solcrash'"
+            )
             
-            goldMint["Gold Mint Acct
-                Seed: 'gold'
-                Mint Auth: Gold Mint
+            goldMint["
+                GOLD MINT ACCT
+                Mint Auth: solcrash
+                Close Auth: solcrash
+                Perm Delegate: solcrash
                 Metadata: Gold Mint
-                Close Auth: Gold Mint"
-            ]
+                NonTransferable
+            "]
             
             goldATA_Bob["Bob Gold ATA
-                Auth: Gold Mint"
+                Auth: Bob Acct"
             ]
             
-            gemMint["Gem Mint Acct
-                Seed: 'mint'
-                Mint Auth: Gem Mint
+            gemMint["
+                GEM MINT ACCT
+                Mint Auth: solcrash
+                Close Auth: solcrash
+                Perm Delegate: solcrash
                 Metadata: Gem Mint
-                Close Auth: Gem Mint"
-            ]
+                NonTransferable
+            "]
             
             gemATA_Bob["Bob Gem ATA
-                Auth: Gem Mint"
+                Auth: Bob Acct"
             ]
 
-            program --[PDA]--> goldMint
-            program --[PDA]--> gemMint
-            goldMint --[PDA]--> goldATA_Bob
+            goldMint ---->|"[PDA]"| goldATA_Bob
             gemMint --[PDA]--> gemATA_Bob
 
             direction LR
             accountB["Bob Acct"]
-            accountB -.->|mint_gold#40;amount#41;| program  
+            accountB -.->|"mint_gold(amount)"| program  
+            program -.->|"mint(GOLD MINT ACCT)"| Token22
+            Token22 -.->|balance increase| goldATA_Bob
 ```
+## Token Extensions used
+* **Close Authority**: For clean-up (in an unforsseable future).
+* **Metadata**: Embedding token info into the Mint.
+* **Non-Transferable**: Assets won't be traded in secondary markets.
+## Caveats
+* `SolCrash Program` will be the Mint (and Burn) authority for these assets. No need to use `Permanent Delegate` extension, because assets are `Non-Transferable`.
+* To accelerate development, we'll let players be authority over ATA. They should not be messing with it directly.
+  * TODO: Restrict player authority by setting `SolCrash Program` as the authority, and wrapping instructions as CPI's.
 
 # Instructions
 ## Initialize
@@ -72,3 +86,10 @@ sequenceDiagram
 
 # TODO
 * New player registration flow.
+
+# FAQ
+**Why use Token Accounts instead of storing all player data in a single account?**  
+This way some aspects of the game are readily indexed by blockchain scanners, as it adheres to typical token standards.
+
+**How come ATA addresses are being manually derrived, when we have libraries and on-chain programs to do it for us?**  
+ATA's are prototypically PDA's of a Mint account. Our Mint accounts are PDA's themselves, making ATA's a *"PDA (Token) of a PDA (Mint)"*. This is a slight deviation from the API's conventions, so we must derive addresses manually.
