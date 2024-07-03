@@ -42,10 +42,14 @@ pub struct ManageAsset<'info> {
     )]
     pub shop_catalog: Account<'info, state::ShopCatalog>,
 
+    /// CHECK: For game jam. This is the player.
+    #[account(signer)]
+    pub token_accounts_auth: AccountInfo<'info>,
+
     #[account(
         mut,
         associated_token::mint = mint_gold,
-        associated_token::authority = mint_gold,
+        associated_token::authority = token_accounts_auth,
         associated_token::token_program = token_program
     )]
     pub token_account_gold: InterfaceAccount<'info, TokenAccount>,
@@ -53,7 +57,7 @@ pub struct ManageAsset<'info> {
     #[account(
         mut,
         associated_token::mint = mint_gems,
-        associated_token::authority = mint_gems,
+        associated_token::authority = token_accounts_auth,
         associated_token::token_program = token_program
     )]
     pub token_account_gems: InterfaceAccount<'info, TokenAccount>,
@@ -129,7 +133,7 @@ fn cpi_burn(ctx: &Context<ManageAsset>, asset_type:CatalogItem, amount: u64) -> 
     let cpi_accounts = Burn {
         mint: mint_account.to_account_info(),
         from: token_account.to_account_info(),
-        authority: mint_account.to_account_info(),
+        authority: ctx.accounts.token_accounts_auth.to_account_info(),
     };
 
     let seeds  = &[

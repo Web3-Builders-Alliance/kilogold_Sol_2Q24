@@ -58,16 +58,16 @@ flowchart TD
 * **Non-Transferable**: Assets won't be traded in secondary markets.
 ## Caveats
 * `SolCrash Program` will be the Mint (and Burn) authority for these assets. No need to use `Permanent Delegate` extension, because assets are `Non-Transferable`.
+  * __THIS IS WRONG!!!__ Burn is only possible by authority. We may need `Permanent Delegate` afterall...
 * To accelerate development, we'll let players be authority over ATA. They should not be messing with it directly.
   * TODO: Restrict player authority by setting `SolCrash Program` as the authority, and wrapping instructions as CPI's.
 
 # Instructions
-## Initialize
+## Initialize Solana Crashers
 ```mermaid
 sequenceDiagram
     participant Dev as Dev Account
     participant SolCrash as SolCrash Program
-    participant ATAProg as ATA Program
     participant Token22Prog as Token22 Program
     participant SysProg as System Program
     participant GoldMint as Gold Mint Account
@@ -84,12 +84,26 @@ sequenceDiagram
 
 ```
 
-# TODO
-* New player registration flow.
+## Register player
+```mermaid
+sequenceDiagram
+    participant Bob as Bob
+    participant Unity as Unity Client
+    participant Wallet as Wallet
+    participant SolCrash as SolCrash Program
+    participant Token22Prog as Token22 Program
+
+    Bob ->> Unity: Sign up
+    Unity ->> Wallet: Sign Txn(Registration)
+    Wallet -->> Bob: Sign prompt
+    Bob ->> Wallet: Accept signing request
+    Wallet ->> SolCrash: Txn[Register(Bob Acct)]
+    SolCrash ->> Token22Prog: CreateATA(GoldMint)
+    SolCrash ->> Token22Prog: CreateATA(GemMint)
+    SolCrash -->> Unity: Txn details
+    Unity ->> Unity: Transition to Dashboard
+```
 
 # FAQ
 **Why use Token Accounts instead of storing all player data in a single account?**  
 This way some aspects of the game are readily indexed by blockchain scanners, as it adheres to typical token standards.
-
-**How come ATA addresses are being manually derrived, when we have libraries and on-chain programs to do it for us?**  
-ATA's are prototypically PDA's of a Mint account. Our Mint accounts are PDA's themselves, making ATA's a *"PDA (Token) of a PDA (Mint)"*. This is a slight deviation from the API's conventions, so we must derive addresses manually.
