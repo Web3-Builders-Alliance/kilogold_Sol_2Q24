@@ -22,7 +22,7 @@ pub mod sol_crashers_on_chain {
         Ok(())
     }
 
-    pub fn shop_trade(ctx: Context<ManageAsset>, trade_index: u8) -> Result<()> {
-        manage_asset::trade(ctx, trade_index)
+    pub fn shop_trade(ctx: Context<ManageAssetTrade>, trade_index: u8) -> Result<()> {
+        manage_asset_trade::trade(ctx, trade_index)
     }
 }
