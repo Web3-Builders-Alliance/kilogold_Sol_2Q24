@@ -38,6 +38,11 @@ const TOKEN_2022_PROGRAM_ID = new anchor.web3.PublicKey(
     "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 );
 
+const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
+
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -74,12 +79,30 @@ describe("sol-crashers-on-chain", () => {
         program.programId
     );
 
+    const [pda_mint_gold_metadata] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("metadata"),
+          TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+          pda_mint_gold.toBuffer(),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
+    );
+
     const [pda_mint_gems] = PublicKey.findProgramAddressSync(
         [
             Buffer.from("mint"),
             Buffer.from("gems"),
         ],
         program.programId
+    );
+
+    const [pda_mint_gems_metadata] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("metadata"),
+          TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+          pda_mint_gems.toBuffer(),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
     );
 
     const bob_account = loadKeypairFromFile(process.env.BOB_KEYPAIR_PATH);
@@ -104,13 +127,24 @@ describe("sol-crashers-on-chain", () => {
             .initialize()
             .accounts({
                 payer: payerPK,
+                config: pda_config,
+                mintGold: pda_mint_gold,
+                mintGems: pda_mint_gems,
+                shopCatalog: pda_shop,
+                rentProgram: anchor.web3.SYSVAR_RENT_PUBKEY,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                tokenProgram: TOKEN_2022_PROGRAM_ID,
+                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID, 
+                metadataGems: pda_mint_gems_metadata,
+                metadataGold: pda_mint_gold_metadata,                
             })
             .rpc({
-                //skipPreflight: true,
+                skipPreflight: true,
             });
 
         console.log("Transaction signature: %s", tx);
         console.log("Payer:\t\t%s", payerPK.toBase58());
+        console.log("Bob:\t\t%s", bob_account.publicKey.toBase58());
         console.log("Program ID:\t%s", program.programId.toBase58());
         console.log("Config PK:\t%s", pda_config.toBase58());
         console.log("Gold Mint PK:\t%s", pda_mint_gold.toBase58());
@@ -162,7 +196,12 @@ describe("sol-crashers-on-chain", () => {
             .accounts({
                 tokenAccountGold: bob_ata_gold.address,
                 tokenAccountGems: bob_ata_gems.address,
-                tokenAccountsAuth: bob_account.publicKey
+                tokenAccountsAuth: bob_account.publicKey,
+                config: pda_config,
+                shopCatalog: pda_shop,
+                mintGems: pda_mint_gems,
+                mintGold: pda_mint_gold,
+                tokenProgram: TOKEN_2022_PROGRAM_ID,
             })
             .signers([
                 payer,
@@ -183,7 +222,12 @@ describe("sol-crashers-on-chain", () => {
             .accounts({
                 tokenAccountGold: bob_ata_gold.address,
                 tokenAccountGems: bob_ata_gems.address,
-                tokenAccountsAuth: bob_account.publicKey
+                tokenAccountsAuth: bob_account.publicKey,
+                config: pda_config,
+                shopCatalog: pda_shop,
+                mintGems: pda_mint_gems,
+                mintGold: pda_mint_gold,
+                tokenProgram: TOKEN_2022_PROGRAM_ID,
             })
             .signers([
                 payer,
