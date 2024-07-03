@@ -1,13 +1,47 @@
 import * as anchor from "@coral-xyz/anchor";
 import { SolCrashersOnChain } from "../target/types/sol_crashers_on_chain";
-import { PublicKey, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, Keypair, LAMPORTS_PER_SOL, Signer } from "@solana/web3.js";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { getOrCreateAssociatedTokenAccount, Account } from "@solana/spl-token";
 import { assert } from "chai";
+import dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
+function loadKeypairFromFile(filePath: string): Keypair {
+    
+    // Resolve home.
+    if (filePath[0] === '~') {
+        filePath = path.join(os.homedir(), filePath.slice(1));
+    }
+
+    // Resolve the absolute path
+    const absolutePath = path.resolve(__dirname, filePath);
+
+    // Check if the file exists
+    if (!fs.existsSync(absolutePath)) {
+        throw new Error(`File not found: ${absolutePath}`);
+    }
+
+    // Read the id.json file
+    const secretKeyString = fs.readFileSync(absolutePath, 'utf8');
+
+    // Parse the secret key array
+    const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
+
+    // Create and return the Keypair
+    return Keypair.fromSecretKey(secretKey);
+}
 
 const TOKEN_2022_PROGRAM_ID = new anchor.web3.PublicKey(
     "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 );
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Step 1: Load the path to the id.json file from the .env file
 
 describe("sol-crashers-on-chain", () => {
     // Configure the client to use the local cluster.
@@ -15,7 +49,8 @@ describe("sol-crashers-on-chain", () => {
 
     const program = anchor.workspace.SolCrashersOnChain as anchor.Program<SolCrashersOnChain>;
 
-    const payerPK = anchor.getProvider().publicKey;
+    const payer = loadKeypairFromFile(process.env.KEYPAIR_PATH);
+    const payerPK = payer.publicKey;
 
     const [pda_config] = PublicKey.findProgramAddressSync(
         [
@@ -47,7 +82,7 @@ describe("sol-crashers-on-chain", () => {
         program.programId
     );
 
-    const bob_account = Keypair.generate();
+    const bob_account = loadKeypairFromFile(process.env.BOB_KEYPAIR_PATH);
     let bob_ata_gold: Account;
     let bob_ata_gems: Account;
 
@@ -84,15 +119,12 @@ describe("sol-crashers-on-chain", () => {
     });
 
     it("Create token accounts", async () => {
-        //BUG: This isn't actually associating the token account with Bob. The seeds are wrong.
-        //     We need to manually seed the token account to make this work.
-        //     Current seeds are [mint, mint], instead of [mint, bob].
         bob_ata_gold = await getOrCreateAssociatedTokenAccount(
             anchor.getProvider().connection,
-            bob_account,
-            pda_mint_gold,
-            pda_mint_gold,
-            true,
+            bob_account,            // payer
+            pda_mint_gold,          // mint
+            bob_account.publicKey,  // owner
+            false,
             undefined,
             undefined,
             TOKEN_2022_PROGRAM_ID,
@@ -104,7 +136,7 @@ describe("sol-crashers-on-chain", () => {
             anchor.getProvider().connection,
             bob_account,
             pda_mint_gems,
-            pda_mint_gems,
+            bob_account.publicKey,
             true,
             undefined,
             undefined,
@@ -130,14 +162,19 @@ describe("sol-crashers-on-chain", () => {
             .accounts({
                 tokenAccountGold: bob_ata_gold.address,
                 tokenAccountGems: bob_ata_gems.address,
+                tokenAccountsAuth: bob_account.publicKey
             })
+            .signers([
+                payer,
+                bob_account
+            ])
             .rpc({
                 skipPreflight: true,
             });
 
         // Print Bob's updated balance
         goldBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gold.address)).value;
-        gemBalance = await (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gems.address)).value;
+        gemBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gems.address)).value;
         console.log("Bob's updated balance:\t[Gems: %s] [Gold: %s]", gemBalance.amount, goldBalance.amount);
 
         // Trade on pair [1]
@@ -146,7 +183,12 @@ describe("sol-crashers-on-chain", () => {
             .accounts({
                 tokenAccountGold: bob_ata_gold.address,
                 tokenAccountGems: bob_ata_gems.address,
+                tokenAccountsAuth: bob_account.publicKey
             })
+            .signers([
+                payer,
+                bob_account
+            ])
             .rpc({
                 skipPreflight: true,
             });
