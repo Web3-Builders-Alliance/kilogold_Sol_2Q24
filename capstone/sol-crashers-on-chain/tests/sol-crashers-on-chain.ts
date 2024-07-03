@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { BN } from "bn.js";
 
 function loadKeypairFromFile(filePath: string): Keypair {
     
@@ -245,5 +246,84 @@ describe("sol-crashers-on-chain", () => {
         assert.equal(Number(goldBalance.amount), 133);
         assert.equal(Number(gemBalance.amount), 20);
 
+    });
+
+    it("Burn some Gold", async () => {
+
+        let goldBalance: anchor.web3.TokenAmount;
+        let gemBalance: anchor.web3.TokenAmount;
+
+        // Print Bob's starting balance
+        goldBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gold.address)).value;
+
+        // Burn some Gold
+        await program.methods
+            .assetBurn(
+                { gold: {} },
+                new BN(3)
+            )
+            .accounts({
+                tokenAccountGold: bob_ata_gold.address,
+                tokenAccountGems: bob_ata_gems.address,
+                tokenAccountsAuth: bob_account.publicKey,
+                config: pda_config,
+                shopCatalog: pda_shop,
+                mintGems: pda_mint_gems,
+                mintGold: pda_mint_gold,
+                tokenProgram: TOKEN_2022_PROGRAM_ID,
+            })
+            .signers([
+                payer,
+                bob_account
+            ])
+            .rpc({
+                skipPreflight: true,
+            });
+
+        // Print Bob's updated balance
+        goldBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gold.address)).value;
+        gemBalance = await (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gems.address)).value;
+        console.log("Bob's tweaked balance:\t[Gems: %s] [Gold: %s]", gemBalance.amount, goldBalance.amount);
+
+        assert.equal(Number(goldBalance.amount), 130);
+    });
+
+    it("Boost Gems", async () => {
+        let goldBalance: anchor.web3.TokenAmount;
+        let gemBalance: anchor.web3.TokenAmount;
+
+        // Print Bob's starting balance
+        gemBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gems.address)).value;
+
+        // Boost Gems
+        await program.methods
+            .assetMint(
+                { gems: {} },
+                new BN(160)
+            )
+            .accounts({
+                tokenAccountGold: bob_ata_gold.address,
+                tokenAccountGems: bob_ata_gems.address,
+                tokenAccountsAuth: bob_account.publicKey,
+                config: pda_config,
+                shopCatalog: pda_shop,
+                mintGems: pda_mint_gems,
+                mintGold: pda_mint_gold,
+                tokenProgram: TOKEN_2022_PROGRAM_ID,
+            })
+            .signers([
+                payer,
+                bob_account
+            ])
+            .rpc({
+                skipPreflight: true,
+            });
+
+        // Print Bob's updated balance
+        goldBalance = (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gold.address)).value;
+        gemBalance = await (await anchor.getProvider().connection.getTokenAccountBalance(bob_ata_gems.address)).value;
+        console.log("Bob's tweaked balance:\t[Gems: %s] [Gold: %s]", gemBalance.amount, goldBalance.amount);
+
+        assert.equal(Number(gemBalance.amount), 180);
     });
 });
