@@ -25,4 +25,12 @@ pub mod sol_crashers_on_chain {
     pub fn shop_trade(ctx: Context<ManageAssetTrade>, trade_index: u8) -> Result<()> {
         manage_asset_trade::trade(ctx, trade_index)
     }
+
+    pub fn asset_mint(ctx: Context<ManageAssetTrade>, asset_type: CatalogItem, amount: u64) -> Result<()> {
+        manage_asset_trade::cpi_mint(&ctx, asset_type, amount)
+    }
+
+    pub fn asset_burn(ctx: Context<ManageAssetTrade>, asset_type: CatalogItem, amount: u64) -> Result<()> {
+        manage_asset_trade::cpi_burn(&ctx, asset_type, amount)
+    }
 }

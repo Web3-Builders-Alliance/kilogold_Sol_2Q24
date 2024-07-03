@@ -86,7 +86,7 @@ pub fn trade(ctx: Context<ManageAssetTrade>, trade_index: u8) -> Result<()> {
     Ok(())
 }
 
-fn cpi_mint(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
+pub fn cpi_mint(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
 
     let (mint_account, token_account, mint_bump) = match asset_type {
         CatalogItem::gold => (ctx.accounts.mint_gold.clone(), ctx.accounts.token_account_gold.clone(), ctx.accounts.config.bump_mint_gold),
@@ -122,7 +122,7 @@ fn cpi_mint(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64
     Ok(())
 }
 
-fn cpi_burn(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
+pub fn cpi_burn(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
 
     let (mint_account, token_account, mint_bump) = match asset_type {
         CatalogItem::gold => (ctx.accounts.mint_gold.clone(), ctx.accounts.token_account_gold.clone(), ctx.accounts.config.bump_mint_gold),
