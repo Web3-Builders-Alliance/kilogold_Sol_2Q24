@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[constant]
-pub const SEED: &str = "anchor";
+pub const SEED: &[u8] = b"anchor";
 
 pub const U8_L: usize = 1; 
 pub const U16_L: usize = 2;

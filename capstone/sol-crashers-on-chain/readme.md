@@ -107,3 +107,8 @@ sequenceDiagram
 # FAQ
 **Why use Token Accounts instead of storing all player data in a single account?**  
 This way some aspects of the game are readily indexed by blockchain scanners, as it adheres to typical token standards.
+
+# Dev Log
+* Anchor ^0.30.0 supports SPL, but Magicblock SDK does not. IDL generation breaks, so no custom programs.
+* Anchor 0.29.0 has partial support for Token22. No Metatada extension. Need to use Metaplex.
+* Magicblock SDK partially supports Token22. Some API calls, like PDA derivation have hardcoded `Tokenkeg`.
