@@ -13,7 +13,7 @@ use anchor_spl::{
 use crate::{state, CatalogItem};
 
 #[derive(Accounts)]
-pub struct ManageAsset<'info> {
+pub struct ManageAssetTrade<'info> {
 
     #[account(
         mut,
@@ -65,7 +65,7 @@ pub struct ManageAsset<'info> {
     pub token_program: Program<'info, Token2022>,
 }
 
-pub fn trade(ctx: Context<ManageAsset>, trade_index: u8) -> Result<()> {
+pub fn trade(ctx: Context<ManageAssetTrade>, trade_index: u8) -> Result<()> {
     
     msg!("Conducting trade index: {}", trade_index);
 
@@ -86,7 +86,7 @@ pub fn trade(ctx: Context<ManageAsset>, trade_index: u8) -> Result<()> {
     Ok(())
 }
 
-fn cpi_mint(ctx: &Context<ManageAsset>, asset_type:CatalogItem, amount: u64) -> Result<()> {
+fn cpi_mint(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
 
     let (mint_account, token_account, mint_bump) = match asset_type {
         CatalogItem::gold => (ctx.accounts.mint_gold.clone(), ctx.accounts.token_account_gold.clone(), ctx.accounts.config.bump_mint_gold),
@@ -122,7 +122,7 @@ fn cpi_mint(ctx: &Context<ManageAsset>, asset_type:CatalogItem, amount: u64) -> 
     Ok(())
 }
 
-fn cpi_burn(ctx: &Context<ManageAsset>, asset_type:CatalogItem, amount: u64) -> Result<()> {
+fn cpi_burn(ctx: &Context<ManageAssetTrade>, asset_type:CatalogItem, amount: u64) -> Result<()> {
 
     let (mint_account, token_account, mint_bump) = match asset_type {
         CatalogItem::gold => (ctx.accounts.mint_gold.clone(), ctx.accounts.token_account_gold.clone(), ctx.accounts.config.bump_mint_gold),
