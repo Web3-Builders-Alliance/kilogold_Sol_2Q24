@@ -1,21 +1,19 @@
 use anchor_lang::{
-    prelude::{Sysvar, *},
+    prelude::*,
     solana_program::{
         account_info::AccountInfo,
         program::invoke,
         pubkey::Pubkey,
         rent::Rent,
         system_instruction::transfer,
-        //sysvar::Sysvar,
+        sysvar::Sysvar,
     },
     Lamports,
 };
-use anchor_spl::metadata::{
-    mpl_token_metadata::types::DataV2,
-    Metadata,CreateMetadataAccountsV3 ,create_metadata_accounts_v3};
-use anchor_spl::token_interface::{ 
-    Mint,
-    Token2022,
+
+use anchor_spl::token_interface::{
+    token_metadata_initialize, Mint,
+    Token2022, TokenMetadataInitialize,
 };
 use crate::state;
 
@@ -33,7 +31,7 @@ pub struct Initialize<'info> {
         bump,
         payer = payer,
     )]
-    pub config: Box<Account<'info, state::Config>>,
+    pub config: Account<'info, state::Config>,
 
     #[account(
         init,
@@ -47,15 +45,11 @@ pub struct Initialize<'info> {
         mint::decimals = 0,
         mint::authority = mint_gold,
         mint::freeze_authority = mint_gold,
-        //extensions::metadata_pointer::authority = mint_gold,
-        //extensions::metadata_pointer::metadata_address = mint_gold,
+        extensions::metadata_pointer::authority = mint_gold,
+        extensions::metadata_pointer::metadata_address = mint_gold,
         //extensions::close_authority::authority = payer, <- This breaks tests in weird ways.
     )]
-    pub mint_gold: Box<InterfaceAccount<'info, Mint>>,
-
-    /// CHECK: New Metaplex Account being created
-    #[account(mut)]
-    pub metadata_gold: UncheckedAccount<'info>,
+    pub mint_gold: InterfaceAccount<'info, Mint>,
 
     #[account(
         init,
@@ -69,15 +63,11 @@ pub struct Initialize<'info> {
         mint::decimals = 0,
         mint::authority = mint_gems,
         mint::freeze_authority = mint_gems,
-        //extensions::metadata_pointer::authority = mint_gems,
-        //extensions::metadata_pointer::metadata_address = mint_gems,
+        extensions::metadata_pointer::authority = mint_gems,
+        extensions::metadata_pointer::metadata_address = mint_gems,
         //extensions::close_authority::authority = payer, <- This breaks tests in weird ways.
     )]
-    pub mint_gems: Box<InterfaceAccount<'info, Mint>>,
-
-    /// CHECK: New Metaplex Account being created
-    #[account(mut)]
-    pub metadata_gems: UncheckedAccount<'info>,
+    pub mint_gems: InterfaceAccount<'info, Mint>,
 
     #[account(
         init,
@@ -88,18 +78,13 @@ pub struct Initialize<'info> {
         payer = payer,
         space = state::ShopCatalog::LENGTH,
     )]
-    pub shop_catalog: Box<Account<'info, state::ShopCatalog>>,
+    pub shop_catalog: Account<'info, state::ShopCatalog>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token2022>,
-    pub rent_program: Sysvar<'info, Rent>,
-    pub token_metadata_program: Program<'info, Metadata>,
-
 }
 
 pub fn config(ctx: &mut Context<Initialize>) -> Result<()> {
-    msg!("Initializing Config");
-
     let config = &mut ctx.accounts.config;
     config.dev_key = Some(*ctx.accounts.payer.key);
     config.bump_self = ctx.bumps.config;
@@ -109,27 +94,20 @@ pub fn config(ctx: &mut Context<Initialize>) -> Result<()> {
     Ok(())
 }
 pub fn accounts(ctx: &mut Context<Initialize>) -> Result<()> {  
-
-    msg!("Initializing GOLD mint account.");
-
     set_mint_account(ctx, 
         "Gold".into(), 
         "GLD".into(), 
         "https://gold.com".into(), 
         &mut ctx.accounts.mint_gold.clone(),
-        & mut ctx.accounts.metadata_gold.clone(),
         b"gold",
     ctx.bumps.mint_gold
     )?;
-
-    msg!("Initializing GEMS mint account.");
 
     set_mint_account(ctx,
         "Gems".into(), 
         "GEM".into(), 
         "https://gems.com".into(),
         &mut ctx.accounts.mint_gems.clone(),
-        & mut ctx.accounts.metadata_gems.clone(),
         b"gems",
     ctx.bumps.mint_gems
     )?;
@@ -137,61 +115,54 @@ pub fn accounts(ctx: &mut Context<Initialize>) -> Result<()> {
     Ok(())
 }
 
-fn set_mint_account<'a>(ctx: &mut Context<Initialize<'a>>, 
-    name: String, 
-    symbol: String, 
-    uri: String, 
-    mint_account: &mut InterfaceAccount<'a, Mint>, 
-    mint_metadata_account: &mut UncheckedAccount<'a>, 
-    mint_seed: &[u8], 
-    mint_bump: u8) -> Result<()> {
-    msg!("Creating metadata CPI signer");
+fn set_mint_account<'a>(ctx: &mut Context<Initialize<'a>>, name: String, symbol: String, uri: String, mint_account: &mut InterfaceAccount<'a, Mint>, mint_seed: &[u8], mint_bump: u8) -> Result<()> {
+    // HACK: Mint needs some SOL to pay for the CPI, because Mint is its own authority.
+    // TODO: Calcualte how much for CPI.
+    // Optimization: Have the payer account to pay for the metadata CPI without changing Mint authority.
+    transfer_lamports(
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.mint_gold.to_account_info(),
+        Rent::get()?.minimum_balance(10000000),
+        ctx.accounts.system_program.to_account_info(),
+    )?;
+    msg!("HACK: Transferred lamports to mint account for CPI");
 
+    // Steps:
+    // All you need to do here is:
+    // 1. execute the initialize_token_metadata function we defined earlier
+    // 2. reload the mint account (data length has changed), 
+    // 3. update the mint account's lamports to the minimum balance using the helper function
+    let cpi_accounts = TokenMetadataInitialize {
+        token_program_id: ctx.accounts.token_program.to_account_info(),
+        mint: mint_account.to_account_info(),
+        metadata: mint_account.to_account_info(), // metadata account is the mint, since data is stored in mint
+        mint_authority: mint_account.to_account_info(),
+        update_authority: mint_account.to_account_info(),
+    };
     let seeds  = &[
         b"mint".as_ref(),
-        b"gold".as_ref(),
-        &[ctx.bumps.mint_gold]
+        mint_seed.as_ref(),
+        &[mint_bump]
     ];
-
-    let signer = [&seeds[..]];
-
-    msg!("Creating metadata context");
-
-    let token_data: DataV2 = DataV2 {
-        name: name,
-        symbol: symbol,
-        uri: uri,
-        seller_fee_basis_points: 0,
-        creators: None,
-        collection: None,
-        uses: None,
-    };
-
-    let metadata_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_metadata_program.to_account_info(),
-        CreateMetadataAccountsV3 {
-            payer: ctx.accounts.payer.to_account_info(),
-            update_authority: mint_account.to_account_info(),
-            mint: mint_account.to_account_info(),
-            metadata: mint_metadata_account.to_account_info(),
-            mint_authority: mint_account.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            rent: ctx.accounts.rent_program.to_account_info(),
-        },
-        &signer
+    let seeds = &[&seeds[..]];
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(), 
+        cpi_accounts,
+        seeds
     );
 
-    msg!("Invoking metadata creation CPI");
-
-    create_metadata_accounts_v3(
-        metadata_ctx,
-        token_data,
-        false,
-        true,
-        None,
-    )?;
-
+    token_metadata_initialize(cpi_ctx, name, symbol, uri)?;
     msg!("Initialized token metadata for mint account");
+
+    mint_account.reload()?;
+    msg!("Reloaded mint account after metadata initialization");
+
+    update_account_lamports_to_minimum_balance(
+        mint_account.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.system_program.to_account_info(),
+    )?;
+    msg!("Updated mint account lamports to minimum balance after metadata initialization");
 
     Ok(())
 }
