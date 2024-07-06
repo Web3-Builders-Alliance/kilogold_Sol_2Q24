@@ -17,7 +17,7 @@ pub mod sol_crashers_on_chain {
 
     pub fn initialize(mut ctx: Context<Initialize>) -> Result<()> {
         initialize::config(&mut ctx)?;
-        //initialize::accounts(&mut ctx)?; Too much CU's?
+        initialize::accounts(&mut ctx)?;
         initialize::shop(&mut ctx)?;
         Ok(())
     }
